@@ -1,4 +1,3 @@
-import ui.CallJFrame;
 import ui.StartJFrame;
 
 public class App {

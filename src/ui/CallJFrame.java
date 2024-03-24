@@ -14,26 +14,23 @@ public class CallJFrame extends JFrame implements ActionListener {
     // 按钮
     private JButton BOTTOM;
     private String bottomText;
-    // 图片路径
+    // 图片
     private final String PATH = "data/img/girl/";
     private ImageIcon icon;
     // 抽取次数
     private int count;
-    // 作弊变量
-    private String[] notName;
+    // 作弊
     private int times;
     private String ordName;
 
-    // 倒计时变量
+    // 倒计时
     private double theTime;
     // 用来定时刷新倒计时的定时器
     private Timer timer;
-    // 倒数时随机刷新时间间隔(毫秒)
+    // 随机抽取的时间间隔(毫秒)
     private final int TIME_INTERVAL = 200;
     // 抽中者名字
     private String theName;
-    // 读取的所有名字
-    private ArrayList<String> nameList;
     // 名字与图片对应
     private Map<String, String> nameIconMap;
     // 可随机到的名字
@@ -60,9 +57,11 @@ public class CallJFrame extends JFrame implements ActionListener {
         BOTTOM.addActionListener(this);
         bottomText = "开始";
         // 获取作弊信息
+        // 作弊变量
+        String[] notName;
         if (data[0] == null) notName = null;
         else notName = data[0].split("[,，]");
-        if(data[1] == null || data[1].isEmpty()) times = -1;
+        if(data[1] == null || data[1].isEmpty()) times = 0;
         else times = Integer.parseInt(data[1]);
         ordName = data[2];
         // 记录随机次数
@@ -71,7 +70,8 @@ public class CallJFrame extends JFrame implements ActionListener {
         icon = new ImageIcon(PATH + "logo.jpg");
         theName = "XXX";
         // 读取所有学生姓名
-        nameList = new ArrayList<>();
+        // 读取的所有名字
+        ArrayList<String> nameList = new ArrayList<>();
         try {
             BufferedReader br = new BufferedReader(new FileReader("data/StudentNames.txt"));
             String line;
@@ -183,7 +183,7 @@ public class CallJFrame extends JFrame implements ActionListener {
                 // 修改倒计时剩余时间
                 theTime -= TIME_INTERVAL / 1000.0;
 
-                // 停止定时器条件
+                // 倒计时结束
                 if (theTime <= 0) {
                     // 判断是否必中指定学生
                     if(count == times) {
@@ -194,7 +194,11 @@ public class CallJFrame extends JFrame implements ActionListener {
                     changeStudent(index);
                     // 恢复抽取按钮
                     BOTTOM.setEnabled(true);
+                    bottomText = "开始";
+                    initImage();
+                    // 停止随机
                     timer.stop();
+
                     System.out.println();
                     System.out.println("第" + count + "次随机: " + theName);
                 }

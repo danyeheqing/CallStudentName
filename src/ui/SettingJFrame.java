@@ -142,10 +142,10 @@ public class SettingJFrame extends JFrame implements ActionListener {
 
     /**
      * 判断输入参数是否符合条件
-     * @param notName
-     * @param times
-     * @param ordName
-     * @return
+     * @param notName 不抽取的名字
+     * @param times 特殊抽取为第几次
+     * @param ordName   特殊抽取的名字
+     * @return boolean
      */
     private boolean judgeData(String notName, String times, String ordName) {
 

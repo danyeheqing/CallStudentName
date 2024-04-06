@@ -1,5 +1,7 @@
 package ui;
 
+import dom.Person;
+
 import javax.swing.*;
 import javax.swing.Timer;
 import java.awt.*;
@@ -31,10 +33,12 @@ public class CallJFrame extends JFrame implements ActionListener {
     private final int TIME_INTERVAL = 200;
     // 抽中者名字
     private String theName;
-    // 名字与图片对应
-    private Map<String, String> nameIconMap;
-    // 可随机到的名字
-    private ArrayList<String> randomNameList;
+    // 名字与图片对应保存
+    private ArrayList<Person> persons;
+    // 可随机到的学生
+    private ArrayList<Person> randomPersons;
+    // 可随机的学生的概率分布(线段截取法)
+    private double[] randomArr;
 
     public CallJFrame() {
         // 默认作弊数据为空值
@@ -61,7 +65,7 @@ public class CallJFrame extends JFrame implements ActionListener {
         String[] notName;
         if (data[0] == null) notName = null;
         else notName = data[0].split("[,，]");
-        if(data[1] == null || data[1].isEmpty()) times = 0;
+        if (data[1] == null || data[1].isEmpty()) times = 0;
         else times = Integer.parseInt(data[1]);
         ordName = data[2];
         // 记录随机次数
@@ -81,26 +85,27 @@ public class CallJFrame extends JFrame implements ActionListener {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        // 姓名和图片对应
-        nameIconMap = new HashMap<>();
+
+        persons = new ArrayList<>();
+        randomPersons = new ArrayList<>();
         for (int i = 0; i < nameList.size(); i++) {
-            nameIconMap.put(nameList.get(i), (i + 1) + ".jpg");
-        }
-        // 记录可随机的姓名
-        randomNameList = new ArrayList<>();
-        boolean sign;
-        for (String stu : nameList) {
-            sign = true;
-            if(notName != null) for (String notStu : notName) {
-                if (stu.equals(notStu)) {
+            // 姓名和图片对应保存
+            Person newPerson = new Person(nameList.get(i), i + 1, 1);
+            persons.add(newPerson);
+            // 记录可随机的人
+            boolean sign = true;
+            if (notName != null) for (String notStu : notName) {
+                if (nameList.get(i).equals(notStu)) {
                     sign = false;
                     break;
                 }
             }
-            if(sign) randomNameList.add(stu);
+            if (sign) randomPersons.add(newPerson);
         }
+        // 初始化概率数组
+        randomArr = new double[randomPersons.size()];
+        changeRandom();
     }
-
 
     /**
      * 展示窗口内图形组件
@@ -171,14 +176,16 @@ public class CallJFrame extends JFrame implements ActionListener {
             initImage();
             count++;
 
-            System.out.println("randomNameList: " + randomNameList);
+            System.out.println("randomNameList: " + randomPersons);
             System.out.println("times: " + times + "     ordName: " + ordName);
+
             theTime = 5.0;
             // 定时器每隔一段时间触发随机
             timer = new Timer(TIME_INTERVAL, e1 -> {
                 // 随机选择学生
-                Random random = new Random();
-                int index = random.nextInt(randomNameList.size());
+                double r = Math.random();   // 0 ~ 1之间的随机数
+                int index = Arrays.binarySearch(randomArr, r);   // 二分查找获取 下标 或 -下标-1
+                if (index < 0) index = -index - 2;  // 转化为可抽取学生列表的下标
                 changeStudent(index);
                 // 修改倒计时剩余时间
                 theTime -= TIME_INTERVAL / 1000.0;
@@ -186,10 +193,15 @@ public class CallJFrame extends JFrame implements ActionListener {
                 // 倒计时结束
                 if (theTime <= 0) {
                     // 判断是否必中指定学生
-                    if(count == times) {
-                        for (int i = 0; i < randomNameList.size(); i++) {
-                            if (randomNameList.get(i).equals(ordName)) index = i;
+                    if (count == times) {
+                        for (int i = 0; i < randomPersons.size(); i++) {
+                            if (randomPersons.get(i).getName().equals(ordName)) index = i;
                         }
+                    } else {
+                        // 未到必中指定学生时, 被抽中者权重降低一半
+                        Person thePerson = randomPersons.get(index);
+                        thePerson.setWeight(thePerson.getWeight() / 2);
+                        changeRandom();
                     }
                     changeStudent(index);
                     // 恢复抽取按钮
@@ -209,10 +221,34 @@ public class CallJFrame extends JFrame implements ActionListener {
     }
 
     private void changeStudent(int index) {
-        theName = randomNameList.get(index);
-        icon = new ImageIcon(PATH + nameIconMap.get(theName));
+        Person thePerson = randomPersons.get(index);
+        theName = thePerson.getName();
+        icon = new ImageIcon(PATH + thePerson.getImgID() + ".jpg");
         System.out.print(theName + " ");
         // 刷新窗口
         initImage();
     }
+
+
+    /**
+     * 根据权重修改概率数组中的概率分布
+     */
+    private void changeRandom() {
+        double allWeight = 0;
+        for (Person randomPerson : randomPersons) {
+            allWeight += randomPerson.getWeight();
+        }
+
+        System.out.println();
+        System.out.print("当前概率分布: ");
+        for (int i = 0; i < randomPersons.size(); i++) {
+            if (i == 0) randomArr[i] = 0.0;
+            else {
+                randomArr[i] = randomPersons.get(i - 1).getWeight() / allWeight + randomArr[i - 1];
+            }
+            System.out.print((i + 1) + " - " + String.format("%.3f", randomArr[i]) + " ");
+        }
+        System.out.println();
+    }
+
 }
